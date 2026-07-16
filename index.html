@@ -176,6 +176,7 @@
     border-bottom:.5px solid var(--seam);color:var(--bone);
     font-family:var(--sans);font-size:16px;text-align:left;cursor:pointer;
   }
+  .sin button.danger{color:var(--ash);font-size:14px;}
   .sin button:last-child{border-bottom:0;color:var(--ash);font-size:14px;}
   :focus-visible{outline:1px solid var(--ash);outline-offset:3px;}
   #flag{
@@ -621,6 +622,22 @@ function go(name){
   window.scrollTo(0,0);
 }
 
+async function wipe(){
+  flag("erasing",true);
+  await sync();
+  const now=Date.now(),jobs=[];
+  for(const k in days){
+    if(!isDay(k))continue;
+    days[k]={c:{},u:now};
+    jobs.push(put(k,{},now));
+  }
+  todos=[];todosU=now;
+  save();saveTodos();
+  jobs.push(put("__todos",[],now));
+  await Promise.all(jobs);
+  location.reload();
+}
+
 function closeMenu(){document.getElementById("sheet").classList.remove("on");}
 function openMenu(){
   const w=document.getElementById("sin");w.innerHTML="";
@@ -631,6 +648,14 @@ function openMenu(){
     b.onclick=()=>{closeMenu();go(id);};
     w.appendChild(b);
   }
+  const r=document.createElement("button");
+  r.className="danger";r.textContent="Start over";
+  let armed=false;
+  r.onclick=()=>{
+    if(!armed){armed=true;r.textContent="Tap again to erase everything";return;}
+    closeMenu();wipe();
+  };
+  w.appendChild(r);
   const c=document.createElement("button");
   c.textContent="Close";c.onclick=closeMenu;
   w.appendChild(c);
