@@ -290,7 +290,14 @@ const store={
 };
 
 const CFG = window.EVOLVE_CONFIG || {url:"",key:""};
-const synced = CFG.url.length>0 && CFG.key.length>0;
+const hasCfg = !!window.EVOLVE_CONFIG;
+const keyOk = !!CFG.key && CFG.key.indexOf("PASTE")!==0;
+const urlOk = !!CFG.url && CFG.url.indexOf("http")===0;
+const synced = hasCfg && urlOk && keyOk;
+const cfgWhy = !hasCfg ? "config.js is not in your repo"
+             : !urlOk  ? "config.js has no project url"
+             : !keyOk  ? "config.js has no key pasted in"
+             : "";
 
 const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 const today=new Date();
@@ -309,7 +316,7 @@ function saveTodos(){
 }
 
 async function sync(){
-  if(!synced){flag("saving to this device only",false);return;}
+  if(!synced){flag(cfgWhy+", saving to this device only",true);return;}
   flag("syncing",false);
   const server={};
   try{
