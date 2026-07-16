@@ -9,7 +9,6 @@
 <meta name="apple-mobile-web-app-title" content="Evolve">
 <title>Evolve</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23000'/><circle cx='50' cy='50' r='22' fill='none' stroke='%23F2F0EB' stroke-width='6'/></svg>">
-
 <script src="config.js"></script>
 <script src="quotes.js"></script>
 
@@ -38,6 +37,7 @@
   .screen{display:none;flex:1;flex-direction:column;animation:rise .45s ease both;}
   .screen.on{display:flex;}
   @keyframes rise{from{opacity:0;transform:translateY(7px);}to{opacity:1;transform:none;}}
+  @keyframes fade{from{opacity:0;}to{opacity:1;}}
 
   .eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ash);}
   .date{font-size:26px;font-weight:500;letter-spacing:-.01em;margin-top:3px;}
@@ -47,14 +47,13 @@
   .hrow{display:flex;justify-content:space-between;align-items:flex-start;}
   .qwrap{text-align:center;padding:0 2px;}
   #quote{
-    font-family:var(--serif);font-size:29px;line-height:1.46;letter-spacing:-.015em;
+    font-family:var(--serif);line-height:1.46;letter-spacing:-.015em;
     animation:fade 1.2s ease both;
   }
   #attrib{
     font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);
     margin-top:26px;animation:fade 1.2s .25s ease both;
   }
-  @keyframes fade{from{opacity:0;}to{opacity:1;}}
   #enter{
     font-size:13px;letter-spacing:.42em;text-transform:lowercase;color:var(--ash);
     padding:22px 40px;background:none;border:0;font-family:var(--sans);cursor:pointer;
@@ -64,9 +63,9 @@
   #enter:active{color:var(--bone);}
 
   /* rows */
-  .rows{margin-top:26px;}
+  .rows{margin-top:24px;}
   .row{
-    display:flex;align-items:center;gap:14px;padding:15px 0;
+    display:flex;align-items:center;gap:14px;padding:14px 0;
     border-top:.5px solid var(--seam);cursor:pointer;user-select:none;
   }
   .rows .row:last-child{border-bottom:.5px solid var(--seam);}
@@ -124,17 +123,54 @@
   .past .row:last-child{border-bottom:.5px solid var(--seam);}
   .past .m{font-size:15px;}
   .past .p{font-size:15px;color:var(--ash);font-variant-numeric:tabular-nums;}
-  .empty{font-size:14px;color:var(--dim);padding:16px 0;line-height:1.6;}
+  .empty{font-size:14px;color:var(--dim);padding:18px 0;line-height:1.6;}
 
-  /* nav */
+  /* to do */
+  .addrow{display:flex;gap:10px;margin-top:26px;align-items:stretch;}
+  #td-in{
+    flex:1;background:none;border:0;border-bottom:.5px solid var(--seam);
+    color:var(--bone);font-family:var(--sans);font-size:16px;padding:10px 0;
+  }
+  #td-in::placeholder{color:var(--dim);}
+  #td-in:focus{outline:none;border-bottom-color:var(--ash);}
+  #td-add{
+    background:none;border:.5px solid var(--seam);border-radius:8px;
+    color:var(--ash);font-family:var(--sans);font-size:12px;letter-spacing:.16em;
+    text-transform:uppercase;padding:0 18px;cursor:pointer;
+  }
+  #td-add:active{color:var(--bone);}
+  .del{
+    margin-left:auto;background:none;border:0;padding:6px 0 6px 14px;
+    color:var(--dim);cursor:pointer;display:flex;align-items:center;
+    transition:color .2s;flex:none;
+  }
+  .del svg{width:18px;height:18px;display:block;}
+  .del:active{color:var(--bone);}
+
+  /* nav + menu */
   nav{display:flex;margin-top:34px;padding-top:19px;border-top:.5px solid var(--seam);}
   nav button{
-    flex:1;padding:6px 0;background:none;border:0;text-align:left;
+    flex:1;padding:6px 0;background:none;border:0;text-align:center;
     color:var(--ash);font-family:var(--sans);font-size:12px;letter-spacing:.22em;
     text-transform:uppercase;cursor:pointer;transition:color .2s;
   }
-  nav button:last-child{text-align:right;}
   nav button:active{color:var(--bone);}
+  #sheet{position:fixed;inset:0;display:none;z-index:20;}
+  #sheet.on{display:block;}
+  .sbg{position:absolute;inset:0;background:rgba(0,0,0,.72);animation:fade .2s ease both;}
+  .sin{
+    position:absolute;left:0;right:0;bottom:0;max-width:520px;margin:0 auto;
+    background:var(--surface);border-top:.5px solid var(--seam);
+    padding:6px 26px max(26px,env(safe-area-inset-bottom));
+    animation:up .26s cubic-bezier(.2,.9,.3,1) both;
+  }
+  @keyframes up{from{transform:translateY(100%);}to{transform:none;}}
+  .sin button{
+    display:block;width:100%;padding:19px 0;background:none;border:0;
+    border-bottom:.5px solid var(--seam);color:var(--bone);
+    font-family:var(--sans);font-size:16px;text-align:left;cursor:pointer;
+  }
+  .sin button:last-child{border-bottom:0;color:var(--ash);font-size:14px;}
   :focus-visible{outline:1px solid var(--ash);outline-offset:3px;}
   #flag{font-size:10px;letter-spacing:.1em;color:#242422;text-align:center;margin-top:14px;}
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
@@ -169,10 +205,7 @@
       <div class="line"><span id="t-count"></span><span id="t-pct"></span></div>
       <div class="segs" id="t-segs"></div>
     </div>
-    <nav>
-      <button data-go="home">Home</button>
-      <button data-go="month">Month</button>
-    </nav>
+    <nav><button data-menu>Menu</button></nav>
     <div id="flag"></div>
   </section>
 
@@ -184,7 +217,7 @@
         <circle class="wa" id="m-arc" cx="70" cy="70" r="62"></circle>
       </svg>
       <div class="wc">
-        <div class="big" id="m-big">100%</div>
+        <div class="big" id="m-big">0%</div>
         <div class="sub" id="m-name"></div>
       </div>
     </div>
@@ -194,25 +227,39 @@
       <div class="eyebrow" style="margin-bottom:6px;">every month before</div>
       <div id="m-past"></div>
     </div>
-    <nav style="margin-top:auto;">
-      <button data-go="home">Home</button>
-      <button data-go="today">Today</button>
-    </nav>
+    <nav style="margin-top:auto;"><button data-menu>Menu</button></nav>
+  </section>
+
+  <section id="todo" class="screen">
+    <div class="eyebrow">To do</div>
+    <div class="date" id="td-date">&nbsp;</div>
+    <div class="addrow">
+      <input id="td-in" type="text" placeholder="Add something" autocomplete="off" enterkeyhint="done">
+      <button id="td-add">Add</button>
+    </div>
+    <div class="rows" id="td-rows"></div>
+    <nav style="margin-top:auto;"><button data-menu>Menu</button></nav>
   </section>
 
 </div>
 
+<div id="sheet"><div class="sbg"></div><div class="sin" id="sin"></div></div>
+
 <script>
 const HABITS=[
+  {id:"sleep", label:"Eight hours",            cat:"Body"},
+  {id:"snooze",label:"No snooze",              cat:"Body"},
   {id:"god",   label:"Time with God",          cat:"Faith"},
   {id:"crea",  label:"Creatine + supplements", cat:"Body"},
-  {id:"gym",   label:"Gym",                    cat:"Body"},
+  {id:"gym",   label:"Work out",               cat:"Body"},
   {id:"biz",   label:"Business",               cat:"Work"},
   {id:"read",  label:"Read",                   cat:"Mind"},
   {id:"skin",  label:"Skincare",               cat:"Body"},
-  {id:"social",label:"Socials under 2h",       cat:"Mind"}
+  {id:"social",label:"Socials under 2h",       cat:"Mind"},
+  {id:"q",     label:"?",                      cat:"Faith"}
 ];
 const CATS=["Faith","Body","Work","Mind"];
+const SCREENS=[["home","Home"],["today","Today"],["month","Month"],["todo","To Do"]];
 
 const QUOTES=(window.EVOLVE_QUOTES&&window.EVOLVE_QUOTES.length)
   ? window.EVOLVE_QUOTES.map(q=>[q,""])
@@ -230,15 +277,22 @@ const store={
 
 const CFG = window.EVOLVE_CONFIG || {url:"",key:""};
 const synced = CFG.url.length>0 && CFG.key.length>0;
-let days = JSON.parse(store.get("evolve")||"{}");
 
 const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 const today=new Date();
 const TKEY=ymd(today);
-const active=k=>HABITS;
-const checks=k=>(days[k]&&days[k].c)||{};
+const isDay=k=>/^\d{4}-\d{2}-\d{2}$/.test(k);
 
+let days = JSON.parse(store.get("evolve")||"{}");
+let todos = JSON.parse(store.get("evolve_todos")||"[]").filter(t=>!t.done||t.done===TKEY);
+let todosU = +(store.get("evolve_todos_u")||0);
+
+const checks=k=>(days[k]&&days[k].c)||{};
 function save(){store.set("evolve",JSON.stringify(days));}
+function saveTodos(){
+  store.set("evolve_todos",JSON.stringify(todos));
+  store.set("evolve_todos_u",String(todosU));
+}
 
 async function pull(){
   if(!synced)return;
@@ -246,19 +300,28 @@ async function pull(){
     const r=await fetch(CFG.url+"/rest/v1/evolve_days?select=*",{headers:{apikey:CFG.key}});
     if(!r.ok)return;
     for(const row of await r.json()){
+      if(row.day==="__todos"){
+        if((row.updated_at||0)>todosU){
+          todos=JSON.parse(row.checks||"[]").filter(t=>!t.done||t.done===TKEY);
+          todosU=row.updated_at||0;saveTodos();
+        }
+        continue;
+      }
+      if(!isDay(row.day))continue;
       const mine=days[row.day];
-      if(!mine||(row.updated_at||0)>(mine.u||0)) days[row.day]={c:JSON.parse(row.checks||"{}"),u:row.updated_at||0};
+      if(!mine||(row.updated_at||0)>(mine.u||0))
+        days[row.day]={c:JSON.parse(row.checks||"{}"),u:row.updated_at||0};
     }
-    save();paintToday();paintMonth(false);
+    save();paintToday();paintMonth(false);paintTodo();
   }catch(e){}
 }
-async function push(k){
+async function put(day,payload,stamp){
   if(!synced)return;
   try{
     await fetch(CFG.url+"/rest/v1/evolve_days",{
       method:"POST",
       headers:{apikey:CFG.key,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates"},
-      body:JSON.stringify({day:k,checks:JSON.stringify(days[k].c),updated_at:days[k].u})
+      body:JSON.stringify({day:day,checks:JSON.stringify(payload),updated_at:stamp})
     });
   }catch(e){}
 }
@@ -267,7 +330,26 @@ function toggle(id){
   if(!days[TKEY])days[TKEY]={c:{},u:0};
   days[TKEY].c[id]=!days[TKEY].c[id];
   days[TKEY].u=Date.now();
-  save();paintToday();paintMonth(false);push(TKEY);
+  save();paintToday();paintMonth(false);put(TKEY,days[TKEY].c,days[TKEY].u);
+}
+
+function addTodo(){
+  const el=document.getElementById("td-in");
+  const text=el.value.trim();
+  if(!text)return;
+  todos.push({id:String(Date.now()),t:text,done:null});
+  todosU=Date.now();saveTodos();
+  el.value="";paintTodo();put("__todos",todos,todosU);
+}
+function toggleTodo(id){
+  const t=todos.find(x=>x.id===id);
+  if(!t)return;
+  t.done=t.done?null:TKEY;
+  todosU=Date.now();saveTodos();paintTodo();put("__todos",todos,todosU);
+}
+function delTodo(id){
+  todos=todos.filter(x=>x.id!==id);
+  todosU=Date.now();saveTodos();paintTodo();put("__todos",todos,todosU);
 }
 
 function paintHome(){
@@ -301,11 +383,10 @@ function paintToday(){
     row.onkeydown=e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();toggle(h.id);}};
     wrap.appendChild(row);
   }
-  const done=HABITS.filter(h=>c[h.id]).length,pct=Math.round(done/HABITS.length*100);
+  const done=HABITS.filter(h=>c[h.id]).length;
   document.getElementById("t-count").textContent=done+" of "+HABITS.length;
-  document.getElementById("t-pct").textContent=pct+"%";
-  const sw=document.getElementById("t-segs");
-  sw.innerHTML="";
+  document.getElementById("t-pct").textContent=Math.round(done/HABITS.length*100)+"%";
+  const sw=document.getElementById("t-segs");sw.innerHTML="";
   HABITS.forEach((h,i)=>{
     const s=document.createElement("span");
     s.className="seg"+(i<done?" on":"");
@@ -315,8 +396,37 @@ function paintToday(){
   document.getElementById("flag").textContent=synced?"":"saving to this device only";
 }
 
+function paintTodo(){
+  document.getElementById("td-date").textContent=MONS[today.getMonth()]+" "+today.getDate();
+  const w=document.getElementById("td-rows");w.innerHTML="";
+  if(!todos.length){
+    w.innerHTML='<div class="empty">Nothing here. Add the thing you keep putting off.</div>';
+    return;
+  }
+  for(const t of todos){
+    const on=t.done===TKEY;
+    const row=document.createElement("div");
+    row.className="row"+(on?" done":"");
+    row.innerHTML='<span class="ring"></span><span class="label"></span>';
+    row.querySelector(".label").textContent=t.t;
+    row.tabIndex=0;row.setAttribute("role","checkbox");row.setAttribute("aria-checked",on);
+    row.onclick=()=>toggleTodo(t.id);
+    row.onkeydown=e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();toggleTodo(t.id);}};
+    if(on){
+      const b=document.createElement("button");
+      b.className="del";
+      b.setAttribute("aria-label","Delete "+t.t);
+      b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3"/></svg>';
+      b.onclick=e=>{e.stopPropagation();delTodo(t.id);};
+      b.onkeydown=e=>{e.stopPropagation();if(e.key===" "||e.key==="Enter"){e.preventDefault();delTodo(t.id);}};
+      row.appendChild(b);
+    }
+    w.appendChild(row);
+  }
+}
+
 function firstDay(){
-  const ks=Object.keys(days).filter(k=>days[k].c&&Object.keys(days[k].c).some(i=>days[k].c[i]));
+  const ks=Object.keys(days).filter(k=>isDay(k)&&days[k].c&&Object.keys(days[k].c).some(i=>days[k].c[i]));
   return ks.length?ks.sort()[0]:TKEY;
 }
 
@@ -387,7 +497,7 @@ function paintMonth(anim){
     el.querySelector("span").textContent=c;
     cw.appendChild(el);
   }
-  const keys=Object.keys(days).filter(k=>Object.values(days[k].c||{}).some(Boolean)).sort();
+  const keys=Object.keys(days).filter(k=>isDay(k)&&Object.values(days[k].c||{}).some(Boolean)).sort();
   const pw=document.getElementById("m-past");pw.innerHTML="";
   const seen=new Set();let any=false;
   for(const k of keys){
@@ -405,17 +515,41 @@ function paintMonth(anim){
   if(!any)pw.innerHTML='<div class="empty">Nothing behind you yet. August shows up here on the first.</div>';
 }
 
+let cur="home";
 function go(name){
+  cur=name;
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("on"));
   document.getElementById(name).classList.add("on");
   if(name==="home")paintHome();
   if(name==="month")paintMonth(true);
+  if(name==="todo")paintTodo();
   window.scrollTo(0,0);
 }
-document.getElementById("enter").onclick=()=>go("today");
-document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.go));
 
-paintHome();paintToday();paintMonth(false);pull();
+function closeMenu(){document.getElementById("sheet").classList.remove("on");}
+function openMenu(){
+  const w=document.getElementById("sin");w.innerHTML="";
+  for(const[id,label]of SCREENS){
+    if(id===cur)continue;
+    const b=document.createElement("button");
+    b.textContent=label;
+    b.onclick=()=>{closeMenu();go(id);};
+    w.appendChild(b);
+  }
+  const c=document.createElement("button");
+  c.textContent="Close";c.onclick=closeMenu;
+  w.appendChild(c);
+  document.getElementById("sheet").classList.add("on");
+}
+
+document.getElementById("enter").onclick=()=>go("today");
+document.querySelectorAll("nav button[data-menu]").forEach(b=>b.onclick=openMenu);
+document.querySelector(".sbg").onclick=closeMenu;
+document.getElementById("td-add").onclick=addTodo;
+document.getElementById("td-in").onkeydown=e=>{if(e.key==="Enter")addTodo();};
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeMenu();});
+
+paintHome();paintToday();paintMonth(false);paintTodo();pull();
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)pull();});
 </script>
 </body>
