@@ -176,7 +176,6 @@
     border-bottom:.5px solid var(--seam);color:var(--bone);
     font-family:var(--sans);font-size:16px;text-align:left;cursor:pointer;
   }
-  .sin button.danger{color:var(--ash);font-size:14px;}
   .sin button:last-child{border-bottom:0;color:var(--ash);font-size:14px;}
   :focus-visible{outline:1px solid var(--ash);outline-offset:3px;}
   #flag{
@@ -303,6 +302,7 @@ const cfgWhy = !hasCfg ? "config.js is not in your repo"
 const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 const today=new Date();
 const TKEY=ymd(today);
+const START="2026-07-16";
 const isDay=k=>/^\d{4}-\d{2}-\d{2}$/.test(k);
 
 let days = JSON.parse(store.get("evolve")||"{}");
@@ -520,13 +520,8 @@ function paintTodo(){
   }
 }
 
-function firstDay(){
-  const ks=Object.keys(days).filter(k=>isDay(k)&&days[k].c&&Object.keys(days[k].c).some(i=>days[k].c[i]));
-  return ks.length?ks.sort()[0]:TKEY;
-}
-
 function monthDays(y,m){
-  const last=new Date(y,m+1,0).getDate(),from=firstDay(),out=[];
+  const last=new Date(y,m+1,0).getDate(),from=START,out=[];
   for(let d=1;d<=last;d++){
     const k=ymd(new Date(y,m,d));
     if(k<from)continue;
@@ -622,22 +617,6 @@ function go(name){
   window.scrollTo(0,0);
 }
 
-async function wipe(){
-  flag("erasing",true);
-  await sync();
-  const now=Date.now(),jobs=[];
-  for(const k in days){
-    if(!isDay(k))continue;
-    days[k]={c:{},u:now};
-    jobs.push(put(k,{},now));
-  }
-  todos=[];todosU=now;
-  save();saveTodos();
-  jobs.push(put("__todos",[],now));
-  await Promise.all(jobs);
-  location.reload();
-}
-
 function closeMenu(){document.getElementById("sheet").classList.remove("on");}
 function openMenu(){
   const w=document.getElementById("sin");w.innerHTML="";
@@ -648,14 +627,6 @@ function openMenu(){
     b.onclick=()=>{closeMenu();go(id);};
     w.appendChild(b);
   }
-  const r=document.createElement("button");
-  r.className="danger";r.textContent="Start over";
-  let armed=false;
-  r.onclick=()=>{
-    if(!armed){armed=true;r.textContent="Tap again to erase everything";return;}
-    closeMenu();wipe();
-  };
-  w.appendChild(r);
   const c=document.createElement("button");
   c.textContent="Close";c.onclick=closeMenu;
   w.appendChild(c);
