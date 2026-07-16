@@ -69,17 +69,19 @@
     border-top:.5px solid var(--seam);cursor:pointer;user-select:none;
   }
   .rows .row:last-child{border-bottom:.5px solid var(--seam);}
+  .rings{width:54px;flex:none;display:flex;gap:8px;align-items:center;}
   .ring{
     width:23px;height:23px;border-radius:50%;border:1.5px solid var(--dim);
-    flex:none;position:relative;transition:background .22s ease,border-color .22s ease;
+    flex:none;position:relative;padding:0;background:none;cursor:pointer;
+    transition:background .22s ease,border-color .22s ease;
   }
-  .row.done .ring{background:var(--bone);border-color:var(--bone);}
+  .ring.on{background:var(--bone);border-color:var(--bone);}
   .ring::after{
     content:"";position:absolute;left:7px;top:3.5px;width:5px;height:10px;
     border:solid var(--void);border-width:0 1.6px 1.6px 0;transform:rotate(45deg) scale(0);
     transition:transform .22s cubic-bezier(.2,1.4,.4,1);
   }
-  .row.done .ring::after{transform:rotate(45deg) scale(1);}
+  .ring.on::after{transform:rotate(45deg) scale(1);}
   .label{font-size:16px;transition:color .22s ease;}
   .row.done .label{color:var(--ash);text-decoration:line-through;text-decoration-thickness:.5px;}
 
@@ -90,10 +92,14 @@
   .fill{height:100%;background:var(--bone);border-radius:2px;transition:width .4s ease;width:0;}
   .segs{display:flex;gap:5px;margin-top:11px;}
   .seg{
-    flex:1;height:3px;background:var(--seam);border-radius:2px;
-    transition:background .35s ease,transform .35s cubic-bezier(.2,1.4,.4,1);
+    flex:1;height:3px;background:var(--seam);border-radius:2px;overflow:hidden;
+    transition:transform .35s cubic-bezier(.2,1.4,.4,1);
   }
-  .seg.on{background:var(--bone);transform:scaleY(1.7);}
+  .seg.on{transform:scaleY(1.7);}
+  .seg i{
+    display:block;height:100%;width:0;background:var(--bone);border-radius:2px;
+    transition:width .35s ease;
+  }
 
   /* month */
   .wheel{position:relative;width:min(230px,64vw);margin:24px auto 0;}
@@ -172,7 +178,11 @@
   }
   .sin button:last-child{border-bottom:0;color:var(--ash);font-size:14px;}
   :focus-visible{outline:1px solid var(--ash);outline-offset:3px;}
-  #flag{font-size:10px;letter-spacing:.1em;color:#242422;text-align:center;margin-top:14px;}
+  #flag{
+    font-size:10px;letter-spacing:.1em;color:#242422;text-align:center;
+    margin-top:14px;cursor:pointer;line-height:1.5;padding:4px 0;
+    word-break:break-word;
+  }
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
 </style>
 </head>
@@ -206,7 +216,7 @@
       <div class="segs" id="t-segs"></div>
     </div>
     <nav><button data-menu>Menu</button></nav>
-    <div id="flag"></div>
+    <div id="flag" role="status" title="Tap to sync now"></div>
   </section>
 
   <section id="month" class="screen">
@@ -247,17 +257,21 @@
 
 <script>
 const HABITS=[
-  {id:"sleep", label:"Eight hours",            cat:"Body"},
-  {id:"snooze",label:"No snooze",              cat:"Body"},
-  {id:"god",   label:"Time with God",          cat:"Faith"},
-  {id:"crea",  label:"Creatine + supplements", cat:"Body"},
-  {id:"gym",   label:"Work out",               cat:"Body"},
-  {id:"biz",   label:"Business",               cat:"Work"},
-  {id:"read",  label:"Read",                   cat:"Mind"},
-  {id:"skin",  label:"Skincare",               cat:"Body"},
-  {id:"social",label:"Socials under 2h",       cat:"Mind"},
-  {id:"q",     label:"?",                      cat:"Faith"}
+  {label:"Eight hours",            cat:"Body",  parts:["sleep"]},
+  {label:"No snooze",              cat:"Body",  parts:["snooze"]},
+  {label:"Skincare",               cat:"Body",  parts:["skinam","skin"]},
+  {label:"Creatine + supplements", cat:"Body",  parts:["crea"]},
+  {label:"Time with God",          cat:"Faith", parts:["god"]},
+  {label:"Work out",               cat:"Body",  parts:["gym"]},
+  {label:"Business",               cat:"Work",  parts:["biz"]},
+  {label:"Read",                   cat:"Mind",  parts:["read"]},
+  {label:"Socials under 2h",       cat:"Mind",  parts:["social"]},
+  {label:"?",                      cat:"Faith", parts:["q"]}
 ];
+const PARTNAME={skinam:"morning",skin:"night"};
+const fmt=v=>Number.isInteger(v)?String(v):v.toFixed(1);
+const rowVal=(c,h)=>h.parts.filter(p=>c[p]).length/h.parts.length;
+
 const CATS=["Faith","Body","Work","Mind"];
 const SCREENS=[["home","Home"],["today","Today"],["month","Month"],["todo","To Do"]];
 
@@ -294,36 +308,95 @@ function saveTodos(){
   store.set("evolve_todos_u",String(todosU));
 }
 
-async function pull(){
-  if(!synced)return;
+async function sync(){
+  if(!synced){flag("saving to this device only",false);return;}
+  flag("syncing",false);
+  const server={};
   try{
     const r=await fetch(CFG.url+"/rest/v1/evolve_days?select=*",{headers:{apikey:CFG.key}});
-    if(!r.ok)return;
-    for(const row of await r.json()){
-      if(row.day==="__todos"){
-        if((row.updated_at||0)>todosU){
-          todos=JSON.parse(row.checks||"[]").filter(t=>!t.done||t.done===TKEY);
-          todosU=row.updated_at||0;saveTodos();
-        }
-        continue;
-      }
-      if(!isDay(row.day))continue;
-      const mine=days[row.day];
-      if(!mine||(row.updated_at||0)>(mine.u||0))
-        days[row.day]={c:JSON.parse(row.checks||"{}"),u:row.updated_at||0};
+    if(!r.ok){
+      const d=await errText(r);
+      flag("read "+r.status+(d?": "+d:""),true);
+      return;
     }
-    save();paintToday();paintMonth(false);paintTodo();
-  }catch(e){}
+    for(const row of await r.json())server[row.day]=row;
+  }catch(e){
+    flag("no connection",true);
+    return;
+  }
+
+  let pushes=[];
+  const st=server["__todos"],su=st?(st.updated_at||0):-1;
+  if(su>todosU){
+    todos=JSON.parse(st.checks||"[]").filter(t=>!t.done||t.done===TKEY);
+    todosU=su;saveTodos();
+  }else if(todosU>su){
+    pushes.push(put("__todos",todos,todosU));
+  }
+
+  for(const k in server){
+    if(!isDay(k))continue;
+    const row=server[k],u=row.updated_at||0,mine=days[k];
+    if(!mine||u>(mine.u||0))days[k]={c:JSON.parse(row.checks||"{}"),u:u};
+  }
+  for(const k in days){
+    if(!isDay(k))continue;
+    const row=server[k],u=row?(row.updated_at||0):-1;
+    if((days[k].u||0)>u)pushes.push(put(k,days[k].c,days[k].u));
+  }
+
+  save();
+  repaintAll();
+
+  const ok=(await Promise.all(pushes)).every(Boolean);
+  if(ok&&!lastErr)flag("synced "+hhmm(),false);
 }
-async function put(day,payload,stamp){
-  if(!synced)return;
+
+function repaintAll(){
+  paintToday();
+  paintMonth(cur==="month");
+  paintTodo();
+  const s=stats(today.getFullYear(),today.getMonth());
+  document.getElementById("h-pct").textContent=s.pct+"%";
+  document.getElementById("h-mon").textContent=MONS[today.getMonth()];
+}
+let lastErr="";
+function hhmm(){
+  const d=new Date();
+  return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+}
+function flag(msg,bad){
+  const el=document.getElementById("flag");
+  if(!el)return;
+  el.textContent=msg;
+  el.style.color=bad?"var(--bone)":"#242422";
+}
+async function errText(r){
+  try{const j=await r.json();return j.message||j.hint||"";}catch(e){return "";}
+}
+
+async function put(day,payload,at){
+  if(!synced)return false;
   try{
-    await fetch(CFG.url+"/rest/v1/evolve_days",{
+    const r=await fetch(CFG.url+"/rest/v1/evolve_days",{
       method:"POST",
-      headers:{apikey:CFG.key,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates"},
-      body:JSON.stringify({day:day,checks:JSON.stringify(payload),updated_at:stamp})
+      headers:{apikey:CFG.key,"Content-Type":"application/json",
+               Prefer:"resolution=merge-duplicates,return=minimal"},
+      body:JSON.stringify({day:day,checks:JSON.stringify(payload),updated_at:at})
     });
-  }catch(e){}
+    if(!r.ok){
+      const d=await errText(r);
+      lastErr="write "+r.status+(d?": "+d:"");
+      flag(lastErr,true);
+      return false;
+    }
+    lastErr="";
+    return true;
+  }catch(e){
+    lastErr="write failed, no connection";
+    flag(lastErr,true);
+    return false;
+  }
 }
 
 function toggle(id){
@@ -373,27 +446,41 @@ function paintToday(){
   const c=checks(TKEY),wrap=document.getElementById("t-rows");
   wrap.innerHTML="";
   for(const h of HABITS){
-    const on=!!c[h.id];
+    const hit=h.parts.filter(p=>c[p]).length,full=hit===h.parts.length;
     const row=document.createElement("div");
-    row.className="row"+(on?" done":"");
-    row.innerHTML='<span class="ring"></span><span class="label"></span>';
-    row.querySelector(".label").textContent=h.label;
-    row.tabIndex=0;row.setAttribute("role","checkbox");row.setAttribute("aria-checked",on);
-    row.onclick=()=>toggle(h.id);
-    row.onkeydown=e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();toggle(h.id);}};
+    row.className="row"+(full?" done":"");
+    const rings=document.createElement("span");
+    rings.className="rings";
+    for(const p of h.parts){
+      const b=document.createElement("button");
+      b.className="ring"+(c[p]?" on":"");
+      b.setAttribute("role","checkbox");
+      b.setAttribute("aria-checked",!!c[p]);
+      b.setAttribute("aria-label",h.label+(PARTNAME[p]?", "+PARTNAME[p]:""));
+      b.onclick=e=>{e.stopPropagation();toggle(p);};
+      rings.appendChild(b);
+    }
+    const lab=document.createElement("span");
+    lab.className="label";lab.textContent=h.label;
+    row.appendChild(rings);row.appendChild(lab);
+    row.onclick=()=>toggle(h.parts.find(p=>!c[p])||h.parts[h.parts.length-1]);
     wrap.appendChild(row);
   }
-  const done=HABITS.filter(h=>c[h.id]).length;
-  document.getElementById("t-count").textContent=done+" of "+HABITS.length;
+  let done=0;
+  for(const h of HABITS)done+=rowVal(c,h);
+  document.getElementById("t-count").textContent=fmt(done)+" of "+HABITS.length;
   document.getElementById("t-pct").textContent=Math.round(done/HABITS.length*100)+"%";
   const sw=document.getElementById("t-segs");sw.innerHTML="";
   HABITS.forEach((h,i)=>{
+    const f=Math.max(0,Math.min(1,done-i));
     const s=document.createElement("span");
-    s.className="seg"+(i<done?" on":"");
+    s.className="seg"+(f>0?" on":"");
     s.style.transitionDelay=(i*22)+"ms";
+    const inner=document.createElement("i");
+    inner.style.width=(f*100)+"%";
+    s.appendChild(inner);
     sw.appendChild(s);
   });
-  document.getElementById("flag").textContent=synced?"":"saving to this device only";
 }
 
 function paintTodo(){
@@ -407,7 +494,7 @@ function paintTodo(){
     const on=t.done===TKEY;
     const row=document.createElement("div");
     row.className="row"+(on?" done":"");
-    row.innerHTML='<span class="ring"></span><span class="label"></span>';
+    row.innerHTML='<span class="rings"><span class="ring'+(on?" on":"")+'"></span></span><span class="label"></span>';
     row.querySelector(".label").textContent=t.t;
     row.tabIndex=0;row.setAttribute("role","checkbox");row.setAttribute("aria-checked",on);
     row.onclick=()=>toggleTodo(t.id);
@@ -448,8 +535,9 @@ function stats(y,m){
     if(k<=TKEY)elapsed++;
     const c=checks(k);let hit=0;
     for(const h of HABITS){
-      cat[h.cat][1]++;
-      if(c[h.id]){done++;hit++;cat[h.cat][0]++;}
+      const v=rowVal(c,h);
+      cat[h.cat][1]+=1;cat[h.cat][0]+=v;
+      done+=v;hit+=v;
     }
     if(hit===HABITS.length)perfect++;
   }
@@ -547,10 +635,12 @@ document.querySelectorAll("nav button[data-menu]").forEach(b=>b.onclick=openMenu
 document.querySelector(".sbg").onclick=closeMenu;
 document.getElementById("td-add").onclick=addTodo;
 document.getElementById("td-in").onkeydown=e=>{if(e.key==="Enter")addTodo();};
+document.getElementById("flag").onclick=()=>{lastErr="";sync();};
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeMenu();});
 
-paintHome();paintToday();paintMonth(false);paintTodo();pull();
-document.addEventListener("visibilitychange",()=>{if(!document.hidden)pull();});
+paintHome();paintToday();paintMonth(false);paintTodo();sync();
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)sync();});
+window.addEventListener("online",sync);
 </script>
 </body>
 </html>
