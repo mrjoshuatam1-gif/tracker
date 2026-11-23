@@ -22,4 +22,5 @@ window.EVOLVE_QUOTES = [
   "Until I Win",
   "Don't Be A B*tch",
   "Work F*cking Harder",
+  "Someone with the same goal is working twice as much as you.",
 ];
