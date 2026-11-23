@@ -96,6 +96,15 @@
 
   /* meter */
   .meter{margin-top:auto;padding-top:30px;}
+  .dnav{display:flex;justify-content:space-between;align-items:flex-end;}
+  .arrows{display:flex;gap:6px;}
+  .arrows button{width:44px;height:44px;border-radius:50%;border:1px solid var(--seam);background:none;
+    color:var(--bone);font-size:24px;line-height:1;padding:0 0 3px;cursor:pointer;font-family:var(--sans);}
+  .arrows button:disabled{opacity:.2;cursor:default;}
+  .arrows button:not(:disabled):active{background:var(--bone);color:#000;}
+  .backtoday{display:none;background:none;border:0;padding:8px 0 0;color:var(--ash);font-family:var(--sans);
+    font-size:11px;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;text-decoration:underline;text-underline-offset:4px;}
+  .backtoday.on{display:inline-block;align-self:flex-start;}
   .meter .line{display:flex;justify-content:space-between;font-size:13px;color:var(--ash);}
   .track{height:2px;background:var(--seam);border-radius:2px;margin-top:9px;overflow:hidden;}
   .fill{height:100%;background:var(--bone);border-radius:2px;transition:width .4s ease;width:0;}
@@ -218,8 +227,17 @@
   </section>
 
   <section id="today" class="screen">
-    <div class="eyebrow" id="t-day">&nbsp;</div>
-    <div class="date" id="t-date">&nbsp;</div>
+    <div class="dnav">
+      <div>
+        <div class="eyebrow" id="t-day">&nbsp;</div>
+        <div class="date" id="t-date">&nbsp;</div>
+      </div>
+      <div class="arrows">
+        <button id="t-prev" aria-label="Day before">&#8249;</button>
+        <button id="t-next" aria-label="Day after">&#8250;</button>
+      </div>
+    </div>
+    <button id="t-back" class="backtoday">back to today</button>
     <div class="rows" id="t-rows"></div>
     <div class="meter">
       <div class="line"><span id="t-count"></span><span id="t-pct"></span></div>
@@ -313,6 +331,14 @@ const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+Stri
 const today=new Date();
 const TKEY=ymd(today);
 const START="2026-07-16";
+let vdate=new Date(today.getFullYear(),today.getMonth(),today.getDate()); /* day shown on the checklist */
+let VKEY=TKEY;
+function setView(d){
+  const k=ymd(d);
+  if(k>TKEY||k<START)return;
+  vdate=d;VKEY=k;paintToday();
+}
+function shiftView(n){setView(new Date(vdate.getFullYear(),vdate.getMonth(),vdate.getDate()+n));}
 const isDay=k=>/^\d{4}-\d{2}-\d{2}$/.test(k);
 
 let days = JSON.parse(store.get("evolve")||"{}");
@@ -418,10 +444,11 @@ async function put(day,payload,at){
 }
 
 function toggle(id){
-  if(!days[TKEY])days[TKEY]={c:{},u:0};
-  days[TKEY].c[id]=!days[TKEY].c[id];
-  days[TKEY].u=Date.now();
-  save();paintToday();paintMonth(false);put(TKEY,days[TKEY].c,days[TKEY].u);
+  const k=VKEY;
+  if(!days[k])days[k]={c:{},u:0};
+  days[k].c[id]=!days[k].c[id];
+  days[k].u=Date.now();
+  save();paintToday();paintMonth(false);put(k,days[k].c,days[k].u);
 }
 
 function addTodo(){
@@ -476,9 +503,13 @@ function paintHome(){
 }
 
 function paintToday(){
-  document.getElementById("t-day").textContent=DAYS[today.getDay()];
-  document.getElementById("t-date").textContent=MONS[today.getMonth()]+" "+today.getDate();
-  const c=checks(TKEY),wrap=document.getElementById("t-rows");
+  const isToday=VKEY===TKEY;
+  document.getElementById("t-day").textContent=isToday?DAYS[vdate.getDay()]:DAYS[vdate.getDay()]+" \u00b7 past day";
+  document.getElementById("t-date").textContent=MONS[vdate.getMonth()]+" "+vdate.getDate();
+  document.getElementById("t-next").disabled=isToday;
+  document.getElementById("t-prev").disabled=VKEY<=START;
+  document.getElementById("t-back").classList.toggle("on",!isToday);
+  const c=checks(VKEY),wrap=document.getElementById("t-rows");
   wrap.innerHTML="";
   for(const h of HABITS){
     const hit=h.parts.filter(p=>c[p]).length,full=hit===h.parts.length;
@@ -660,7 +691,10 @@ function openMenu(){
   document.getElementById("sheet").classList.add("on");
 }
 
-document.getElementById("enter").onclick=()=>go("today");
+document.getElementById("enter").onclick=()=>{setView(new Date(today.getFullYear(),today.getMonth(),today.getDate()));go("today");};
+document.getElementById("t-prev").onclick=()=>shiftView(-1);
+document.getElementById("t-next").onclick=()=>shiftView(1);
+document.getElementById("t-back").onclick=()=>setView(new Date(today.getFullYear(),today.getMonth(),today.getDate()));
 document.querySelectorAll("nav button[data-menu]").forEach(b=>b.onclick=openMenu);
 document.querySelector(".sbg").onclick=closeMenu;
 document.getElementById("td-add").onclick=addTodo;
