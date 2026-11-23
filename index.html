@@ -11,6 +11,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23000'/><circle cx='50' cy='50' r='22' fill='none' stroke='%23F2F0EB' stroke-width='6'/></svg>">
 <script src="config.js"></script>
 <script src="quotes.js"></script>
+<script src="videos.js"></script>
 
 <style>
   :root{
@@ -61,6 +62,26 @@
   }
   @keyframes breathe{0%,100%{opacity:.42;}50%{opacity:1;}}
   #enter:active{color:var(--bone);}
+  #play{
+    display:flex;align-items:center;justify-content:center;gap:12px;
+    margin:34px auto 0;padding:14px 26px;border:1px solid var(--dim);border-radius:999px;
+    color:var(--bone);text-decoration:none;font-family:var(--sans);background:none;cursor:pointer;
+    font-size:12px;letter-spacing:.32em;text-transform:lowercase;width:max-content;
+    animation:fade 1.2s .4s ease both;
+  }
+  #play:active{background:var(--bone);color:#000;}
+  #play svg{width:12px;height:12px;fill:currentColor;}
+  #vid{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.82);display:none;
+    align-items:center;justify-content:center;padding:24px;}
+  #vid.on{display:flex;animation:fade .35s ease both;}
+  #vid .box{width:100%;max-width:340px;text-align:center;border:.5px solid var(--seam);
+    border-radius:22px;background:#0b0b0b;padding:34px 22px 18px;}
+  #vid .vgo{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;
+    padding:18px 0;border-radius:999px;background:var(--bone);color:#000;text-decoration:none;
+    font-family:var(--sans);font-size:14px;letter-spacing:.3em;text-transform:lowercase;margin-top:22px;}
+  #vid .vgo svg{width:13px;height:13px;fill:currentColor;}
+  #vid .vskip{background:none;border:0;color:var(--ash);font-family:var(--sans);font-size:12px;
+    letter-spacing:.28em;text-transform:lowercase;padding:16px 20px 4px;cursor:pointer;}
 
   /* rows */
   .rows{margin-top:24px;}
@@ -203,6 +224,7 @@
     <div class="qwrap">
       <div id="quote">&nbsp;</div>
       <div id="attrib">&nbsp;</div>
+      <button id="play" style="display:none;"><svg viewBox="0 0 10 12" aria-hidden="true"><path d="M0 0l10 6-10 6z"/></svg>play</button>
     </div>
     <button id="enter">enter</button>
   </section>
@@ -251,6 +273,14 @@
     <nav style="margin-top:auto;"><button data-menu>Menu</button></nav>
   </section>
 
+</div>
+
+<div id="vid">
+  <div class="box">
+    <div class="eyebrow">Morning video</div>
+    <a class="vgo" id="vgo" target="_blank" rel="noopener"><svg viewBox="0 0 10 12" aria-hidden="true"><path d="M0 0l10 6-10 6z"/></svg>play</a>
+    <button class="vskip" id="vclose">skip</button>
+  </div>
 </div>
 
 <div id="sheet"><div class="sbg"></div><div class="sin" id="sin"></div></div>
@@ -433,6 +463,25 @@ function delTodo(id){
   todosU=Date.now();saveTodos();paintTodo();put("__todos",todos,todosU);
 }
 
+/* morning video: plays inside the app */
+function ytId(u){
+  const m=String(u).match(/(?:v=|youtu\.be\/|shorts\/|embed\/|live\/)([\w-]{11})/);
+  return m?m[1]:(/^[\w-]{11}$/.test(u)?u:null);
+}
+const VIDS=(window.EVOLVE_VIDEOS||[]).map(ytId).filter(Boolean);
+let vidPick=null;
+function pickVid(not){
+  if(VIDS.length<2)return VIDS[0];
+  let v;do{v=VIDS[Math.floor(Math.random()*VIDS.length)];}while(v===not);
+  return v;
+}
+function openVid(id){
+  if(!id)return;
+  document.getElementById("vgo").href="https://www.youtube.com/watch?v="+id;
+  document.getElementById("vid").classList.add("on");
+}
+function closeVid(){document.getElementById("vid").classList.remove("on");}
+
 function paintHome(){
   document.getElementById("h-day").textContent=DAYS[today.getDay()];
   document.getElementById("h-date").textContent=MONS[today.getMonth()]+" "+today.getDate();
@@ -446,6 +495,9 @@ function paintHome(){
   el.textContent=q[0];at.textContent=q[1];at.style.display=q[1]?"":"none";
   el.style.animation="none";at.style.animation="none";el.offsetHeight;
   el.style.animation="";at.style.animation="";
+  const pl=document.getElementById("play");
+  if(VIDS.length){vidPick=pickVid(vidPick);pl.style.display="";}
+  else pl.style.display="none";
 }
 
 function paintToday(){
@@ -634,14 +686,18 @@ function openMenu(){
 }
 
 document.getElementById("enter").onclick=()=>go("today");
+document.getElementById("play").onclick=()=>openVid(vidPick);
+document.getElementById("vgo").addEventListener("click",()=>setTimeout(closeVid,300));
+document.getElementById("vclose").onclick=closeVid;
 document.querySelectorAll("nav button[data-menu]").forEach(b=>b.onclick=openMenu);
 document.querySelector(".sbg").onclick=closeMenu;
 document.getElementById("td-add").onclick=addTodo;
 document.getElementById("td-in").onkeydown=e=>{if(e.key==="Enter")addTodo();};
 document.getElementById("flag").onclick=()=>{lastErr="";sync();};
-document.addEventListener("keydown",e=>{if(e.key==="Escape")closeMenu();});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeMenu();closeVid();}});
 
 paintHome();paintToday();paintMonth(false);paintTodo();sync();
+openVid(vidPick);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)sync();});
 window.addEventListener("online",sync);
 </script>
