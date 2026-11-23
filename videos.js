@@ -1,9 +1,9 @@
 /* ============================================================
    YOUR MORNING VIDEOS.
 
-   Each time you open the app, a popup picks one of these at
-   random. Press play and it opens in YouTube. "skip" closes it.
-   The play button on the home screen brings the popup back.
+   The play button under your quote opens one of these in
+   YouTube. It stays the same all day and moves to the next
+   one each day, going down the list and starting over.
 
    Add one:   copy the YouTube link, paste it in quotes,
               comma at the end. Any YouTube link works

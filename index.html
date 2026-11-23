@@ -71,18 +71,6 @@
   }
   #play:active{background:var(--bone);color:#000;}
   #play svg{width:12px;height:12px;fill:currentColor;}
-  #vid{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.82);display:none;
-    align-items:center;justify-content:center;padding:24px;}
-  #vid.on{display:flex;animation:fade .35s ease both;}
-  #vid .box{width:100%;max-width:340px;text-align:center;border:.5px solid var(--seam);
-    border-radius:22px;background:#0b0b0b;padding:34px 22px 18px;}
-  #vid .vgo{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;
-    padding:18px 0;border-radius:999px;background:var(--bone);color:#000;text-decoration:none;
-    font-family:var(--sans);font-size:14px;letter-spacing:.3em;text-transform:lowercase;margin-top:22px;}
-  #vid .vgo svg{width:13px;height:13px;fill:currentColor;}
-  #vid .vskip{background:none;border:0;color:var(--ash);font-family:var(--sans);font-size:12px;
-    letter-spacing:.28em;text-transform:lowercase;padding:16px 20px 4px;cursor:pointer;}
-
   /* rows */
   .rows{margin-top:24px;}
   .row{
@@ -224,7 +212,7 @@
     <div class="qwrap">
       <div id="quote">&nbsp;</div>
       <div id="attrib">&nbsp;</div>
-      <button id="play" style="display:none;"><svg viewBox="0 0 10 12" aria-hidden="true"><path d="M0 0l10 6-10 6z"/></svg>play</button>
+      <a id="play" target="_blank" rel="noopener" style="display:none;"><svg viewBox="0 0 10 12" aria-hidden="true"><path d="M0 0l10 6-10 6z"/></svg>play</a>
     </div>
     <button id="enter">enter</button>
   </section>
@@ -273,14 +261,6 @@
     <nav style="margin-top:auto;"><button data-menu>Menu</button></nav>
   </section>
 
-</div>
-
-<div id="vid">
-  <div class="box">
-    <div class="eyebrow">Morning video</div>
-    <a class="vgo" id="vgo" target="_blank" rel="noopener"><svg viewBox="0 0 10 12" aria-hidden="true"><path d="M0 0l10 6-10 6z"/></svg>play</a>
-    <button class="vskip" id="vclose">skip</button>
-  </div>
 </div>
 
 <div id="sheet"><div class="sbg"></div><div class="sin" id="sin"></div></div>
@@ -469,18 +449,12 @@ function ytId(u){
   return m?m[1]:(/^[\w-]{11}$/.test(u)?u:null);
 }
 const VIDS=(window.EVOLVE_VIDEOS||[]).map(ytId).filter(Boolean);
-let vidPick=null;
-function pickVid(not){
-  if(VIDS.length<2)return VIDS[0];
-  let v;do{v=VIDS[Math.floor(Math.random()*VIDS.length)];}while(v===not);
-  return v;
+/* same video all day, a new one each day, in order */
+function todaysVid(){
+  if(!VIDS.length)return null;
+  const d=new Date(),day=Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5);
+  return VIDS[day%VIDS.length];
 }
-function openVid(id){
-  if(!id)return;
-  document.getElementById("vgo").href="https://www.youtube.com/watch?v="+id;
-  document.getElementById("vid").classList.add("on");
-}
-function closeVid(){document.getElementById("vid").classList.remove("on");}
 
 function paintHome(){
   document.getElementById("h-day").textContent=DAYS[today.getDay()];
@@ -496,7 +470,8 @@ function paintHome(){
   el.style.animation="none";at.style.animation="none";el.offsetHeight;
   el.style.animation="";at.style.animation="";
   const pl=document.getElementById("play");
-  if(VIDS.length){vidPick=pickVid(vidPick);pl.style.display="";}
+  const vid=todaysVid();
+  if(vid){pl.href="https://www.youtube.com/watch?v="+vid;pl.style.display="";}
   else pl.style.display="none";
 }
 
@@ -686,18 +661,14 @@ function openMenu(){
 }
 
 document.getElementById("enter").onclick=()=>go("today");
-document.getElementById("play").onclick=()=>openVid(vidPick);
-document.getElementById("vgo").addEventListener("click",()=>setTimeout(closeVid,300));
-document.getElementById("vclose").onclick=closeVid;
 document.querySelectorAll("nav button[data-menu]").forEach(b=>b.onclick=openMenu);
 document.querySelector(".sbg").onclick=closeMenu;
 document.getElementById("td-add").onclick=addTodo;
 document.getElementById("td-in").onkeydown=e=>{if(e.key==="Enter")addTodo();};
 document.getElementById("flag").onclick=()=>{lastErr="";sync();};
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeMenu();closeVid();}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeMenu();});
 
 paintHome();paintToday();paintMonth(false);paintTodo();sync();
-openVid(vidPick);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)sync();});
 window.addEventListener("online",sync);
 </script>
