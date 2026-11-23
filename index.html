@@ -9,9 +9,10 @@
 <meta name="apple-mobile-web-app-title" content="Evolve">
 <title>Evolve</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23000'/><circle cx='50' cy='50' r='22' fill='none' stroke='%23F2F0EB' stroke-width='6'/></svg>">
-<script src="config.js"></script>
-<script src="quotes.js"></script>
-<script src="videos.js"></script>
+<script>window.EVOLVE_BUILD="202611230042";</script>
+<script src="config.js?v=202611230042"></script>
+<script src="quotes.js?v=202611230042"></script>
+<script src="videos.js?v=202611230042"></script>
 
 <style>
   :root{
@@ -703,7 +704,16 @@ document.getElementById("flag").onclick=()=>{lastErr="";sync();};
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeMenu();});
 
 paintHome();paintToday();paintMonth(false);paintTodo();sync();
-document.addEventListener("visibilitychange",()=>{if(!document.hidden)sync();});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden){sync();checkUpdate();}});
+/* auto update: if a newer version is on GitHub, load it */
+async function checkUpdate(){
+  try{
+    const r=await fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"});
+    const t=await r.text(),m=t.match(/EVOLVE_BUILD="(\d+)"/);
+    if(m&&m[1]>window.EVOLVE_BUILD){location.replace(location.pathname+"?v="+m[1]);}
+  }catch(e){}
+}
+checkUpdate();
 window.addEventListener("online",sync);
 </script>
 </body>
