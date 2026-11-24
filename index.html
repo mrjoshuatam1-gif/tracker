@@ -9,10 +9,10 @@
 <meta name="apple-mobile-web-app-title" content="Evolve">
 <title>Evolve</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23000'/><circle cx='50' cy='50' r='22' fill='none' stroke='%23F2F0EB' stroke-width='6'/></svg>">
-<script>window.EVOLVE_BUILD="202611231237";</script>
-<script src="config.js?v=202611231237"></script>
-<script src="quotes.js?v=202611231237"></script>
-<script src="videos.js?v=202611231237"></script>
+<script>window.EVOLVE_BUILD="202611231603";</script>
+<script src="config.js?v=202611231603"></script>
+<script src="quotes.js?v=202611231603"></script>
+<script src="videos.js?v=202611231603"></script>
 
 <style>
   :root{
@@ -98,6 +98,21 @@
   .ring.on::after{transform:rotate(45deg) scale(1);}
   .label{font-size:16px;transition:color .22s ease;}
   .row.done .label{color:var(--ash);text-decoration:line-through;text-decoration-thickness:.5px;}
+  .sring{width:23px;height:23px;transform:rotate(-90deg);overflow:visible;}
+  .sring .st{fill:none;stroke:var(--dim);stroke-width:1.5;}
+  .sring .sa{fill:none;stroke:var(--bone);stroke-width:2.2;stroke-linecap:round;transition:stroke-dashoffset .35s ease;}
+  .row.sleep.done .sring .st{fill:var(--bone);stroke:var(--bone);}
+  .sring .sc{fill:none;stroke:#000;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transform:rotate(90deg);transform-origin:12px 12px;}
+  .row.sleep .label{flex:1;}
+  .hrs{font-size:13px;color:var(--ash);font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .hrs b{font-weight:500;color:var(--bone);font-size:15px;}
+  .row.sleep.done .hrs b{color:var(--ash);}
+  .steps{display:flex;gap:6px;margin-left:6px;}
+  .steps button{width:36px;height:36px;border-radius:50%;border:1px solid var(--seam);background:none;
+    color:var(--bone);font-size:20px;line-height:1;padding:0 0 2px;cursor:pointer;font-family:var(--sans);
+    -webkit-tap-highlight-color:transparent;}
+  .steps button:disabled{opacity:.25;cursor:default;}
+  .steps button:not(:disabled):active{background:var(--bone);color:#000;}
 
   /* meter */
   .meter{margin-top:auto;padding-top:30px;}
@@ -290,7 +305,7 @@
 
 <script>
 const HABITS=[
-  {label:"Eight hours",            cat:"Body",  parts:["sleep"]},
+  {label:"Sleep",                  cat:"Body",  parts:["sleep"], hours:8},
   {label:"No snooze",              cat:"Body",  parts:["snooze"]},
   {label:"Skincare",               cat:"Body",  parts:["skinam","skin"]},
   {label:"Creatine + supplements", cat:"Body",  parts:["crea"]},
@@ -302,8 +317,12 @@ const HABITS=[
   {label:"?",                      cat:"Faith", parts:["q"]}
 ];
 const PARTNAME={skinam:"morning",skin:"night"};
-const fmt=v=>Number.isInteger(v)?String(v):v.toFixed(1);
-const rowVal=(c,h)=>h.parts.filter(p=>c[p]).length/h.parts.length;
+const fmt=v=>Number.isInteger(v)?String(v):(Math.round(v*10)/10).toFixed(1);
+/* sleep is saved as a number of hours; old days saved as a check count as a full night */
+const SLEEP_MAX=12;
+const sleepHrs=c=>typeof c.sleep==="number"?c.sleep:(c.sleep?8:0);
+const rowVal=(c,h)=>h.hours?Math.min(sleepHrs(c)/h.hours,1)
+  :h.parts.filter(p=>c[p]).length/h.parts.length;
 
 const CATS=["Faith","Body","Work","Mind"];
 const SCREENS=[["home","Home"],["today","Today"],["month","Month"],["todo","To Do"]];
@@ -448,6 +467,15 @@ async function put(day,payload,at){
   }
 }
 
+function setSleep(n){
+  const k=VKEY;
+  if(!days[k])days[k]={c:{},u:0};
+  const v=Math.max(0,Math.min(SLEEP_MAX,n));
+  if(v)days[k].c.sleep=v;else delete days[k].c.sleep;
+  days[k].u=Date.now();
+  save();paintToday();paintMonth(false);put(k,days[k].c,days[k].u);
+}
+
 function toggle(id){
   const k=VKEY;
   if(!days[k])days[k]={c:{},u:0};
@@ -531,6 +559,29 @@ function paintHome(){
   else pl.style.display="none";
 }
 
+function sleepRow(c,h){
+  const hrs=sleepHrs(c),f=Math.min(hrs/h.hours,1),full=f>=1;
+  const row=document.createElement("div");
+  row.className="row sleep"+(full?" done":"");
+  const C=2*Math.PI*10;
+  row.innerHTML=
+    '<span class="rings"><svg class="sring" viewBox="0 0 24 24" aria-hidden="true">'+
+      '<circle cx="12" cy="12" r="10" class="st"></circle>'+
+      '<circle cx="12" cy="12" r="10" class="sa" style="stroke-dasharray:'+C+';stroke-dashoffset:'+(C*(1-f))+'"></circle>'+
+      (full?'<path d="M7.5 12.3l3 3 6-6.3" class="sc"></path>':'')+
+    '</svg></span>'+
+    '<span class="label">'+h.label+'</span>'+
+    '<span class="hrs"><b>'+fmt(hrs)+'</b> / '+h.hours+'h</span>'+
+    '<span class="steps"><button class="minus" aria-label="One less hour of sleep">&minus;</button>'+
+    '<button class="plus" aria-label="One more hour of sleep">+</button></span>';
+  row.querySelector(".minus").disabled=hrs<=0;
+  row.querySelector(".plus").disabled=hrs>=SLEEP_MAX;
+  row.querySelector(".minus").onclick=e=>{e.stopPropagation();setSleep(hrs-1);};
+  row.querySelector(".plus").onclick=e=>{e.stopPropagation();setSleep(hrs+1);};
+  row.style.cursor="default";
+  return row;
+}
+
 function paintToday(){
   const isToday=VKEY===TKEY;
   document.getElementById("t-day").textContent=isToday?DAYS[vdate.getDay()]:DAYS[vdate.getDay()]+" \u00b7 past day";
@@ -541,6 +592,7 @@ function paintToday(){
   const c=checks(VKEY),wrap=document.getElementById("t-rows");
   wrap.innerHTML="";
   for(const h of HABITS){
+    if(h.hours){wrap.appendChild(sleepRow(c,h));continue;}
     const hit=h.parts.filter(p=>c[p]).length,full=hit===h.parts.length;
     const row=document.createElement("div");
     row.className="row"+(full?" done":"");
